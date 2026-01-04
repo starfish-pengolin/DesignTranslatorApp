@@ -1,12 +1,13 @@
 #!/bin/bash
 # Auto-version GitHub release script for DesignTranslatorApp
+# Clean zip excluding venv, .git, .ssh, caches, and temp files
 
 APP_NAME="DesignTranslatorApp"
 REPO="git@github.com:starfish-pengolin/DesignTranslatorApp.git"
 RELEASE_TITLE="DesignTranslatorApp Release"
 RELEASE_NOTES="Stable release of DesignTranslatorApp"
 
-# --- Get latest tag ---
+# --- 1) Get latest tag and increment patch version ---
 LATEST_TAG=$(git tag --sort=-v:refname | head -n1)
 if [[ -z "$LATEST_TAG" ]]; then
   VERSION="v1.0.0"
@@ -18,28 +19,38 @@ fi
 
 ZIP_NAME="${APP_NAME}_${VERSION}.zip"
 
-# --- Zip project excluding venv and git ---
+# --- 2) Zip project cleanly ---
 echo "Zipping project as $ZIP_NAME..."
-zip -r $ZIP_NAME . -x "*.git*" "venv/*" "*.pyc" "__pycache__/*"
+zip -r $ZIP_NAME . \
+  -x "*.git*" \
+  -x "venv/*" \
+  -x "*.pyc" \
+  -x "__pycache__/*" \
+  -x ".ssh/*" \
+  -x "tmp/*" \
+  -x "frontend_dist/*" \
+  -x "node_modules/*" \
+  -x "*.log" \
+  -x "*.zip"
 
-# --- Commit changes ---
+# --- 3) Commit changes ---
 echo "Adding and committing changes..."
 git add .
 git commit -m "Prepare $VERSION release" || echo "Nothing to commit"
 
-# --- Push to GitHub ---
+# --- 4) Push to GitHub ---
 echo "Pushing to GitHub..."
 git branch -M main
 git remote set-url origin $REPO
 git push -u origin main
 
-# --- Create GitHub release ---
+# --- 5) Create GitHub release ---
 echo "Creating GitHub release $VERSION..."
 gh release create $VERSION $ZIP_NAME \
   --title "$RELEASE_TITLE $VERSION" \
   --notes "$RELEASE_NOTES"
 
-# --- Print permanent download link ---
-echo "Release created! Download link:"
+# --- 6) Print permanent download link ---
+echo "Release created! Direct download link:"
 echo "https://github.com/starfish-pengolin/$APP_NAME/releases/download/$VERSION/$ZIP_NAME"
 
